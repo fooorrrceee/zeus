@@ -8,6 +8,12 @@
 
 <script>document.querySelector('#nav-siem').classList.add('active');</script>
 
+<style type="text/css">
+  td.light-mode {
+    color:black;
+  }
+</style>
+
 <subnav>
   <a href="{{url_for('dashboard_siem_create')}}">Create Event</a>
   <a href="{{url_for('dashboard_siem')}}">View Ongoing Investigations</a>

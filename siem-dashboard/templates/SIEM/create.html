@@ -13,13 +13,17 @@
   <a href="{{url_for('dashboard_siem')}}">View Ongoing Investigations</a>
   <a href="{{url_for('dashboard_siem_all')}}">View All Events</a>
 </subnav>
-
+<style type="text/css">
+  td.light-mode {
+    color:black;
+  }
+</style>
 <br/><br/>
 
   <div class="main">
     <div style="margin: 0 auto;border: 0.5px solid white; border-radius: 50px;padding: 50px;text-align: center;">
       <br/>
-      <form style="color:white;text-align: center;margin: 0 auto;" method="POST">
+      <form style="text-align: center;margin: 0 auto;" method="POST">
         <span style="display: flex;align-items: center;align-content: center;text-align: center; padding-left: 30%;">
           <span>Source Device:</span>&nbsp;&nbsp; <input type="text" name="name"/>
           &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;

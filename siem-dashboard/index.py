@@ -17,12 +17,14 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 DATABASE_URL = "postgresql://postgres:inr_db@db.inr.intellx.in/zeus"
 CONNECTION = psycopg2.connect(DATABASE_URL)
 
+@app.route('/')
+def main():
+    return redirect(url_for("dashboard"))
 
 @app.route('/dashboard')
 def dashboard():
     return render_template("dashboard.html")
-
-
+    
 @app.route('/dashboard/matrix', methods=['GET', 'POST'])
 def dashboard_matrix():
 
