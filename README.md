@@ -6,6 +6,8 @@ Welcome to the Zero Exploitation Unified System for Entity Security, a robust Cy
 
 ![System Logo](images/zeus_transp.png)
 
+A video explanation of this framework and implementation is available at https://tinyurl.com/zeus-crcf-video
+
 ## Overview
 
 This system is designed to provide a unified approach to entity security, ensuring a zero-exploitation environment for financial institutions. The Cyber Resilience Controls Framework (CRCF) integrates various security controls to safeguard against cyber threats and enhance overall resilience. This system provides the security manager with a **SIEM - *Security Events and Incidents Management*** Dashboard for ease of security management.
