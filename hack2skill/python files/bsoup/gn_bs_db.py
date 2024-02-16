@@ -13,9 +13,9 @@ def ingest_google_news():
     t_news = []
     t_publisher = []
     t_urls = []
-    t_dates = []
+    t_dates =  []
 
-    # set header by random user agent 
+    # set header by random user agent.
     r = requests.Session()
     headers = random_header()
     r.headers = headers
