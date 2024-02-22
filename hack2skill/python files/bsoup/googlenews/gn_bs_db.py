@@ -1,72 +1,91 @@
 import pandas as pd
-import psycopg2
 import random
 import requests
 import bs4
+import sqlalchemy
 from collections import OrderedDict
+from sqlalchemy import create_engine, types as sqlalchemy_types
+from urllib.parse import quote  
+from urllib.request import Request, urlopen 
+
+
+pd.set_option('max_colwidth', None)
+
+def random_header():
+    headers_list = list_dict()
+    headers = random.choice(headers_list)
+    return headers
 
 def ingest_google_news():
-    query = 'financial cyber-threat'        
-    url = f"https://www.google.com/search?q={query}&tbm=nws&lr=lang_en&hl=en&sort=date&num=5"
+    query = 'financial cyber-threat'     
+    encoded_query = quote(query)
+    url = f"https://www.google.com/search?q={encoded_query}&tbm=nws&lr=lang_en&hl=en&sort=date&num=5"
 
-    df = pd.DataFrame()
-    t_news = []
-    t_publisher = []
+    # Initialize lists to store data
+    t_titles = []
     t_urls = []
-    t_dates =  []
+    t_dates = [] 
 
-    # set header by random user agent.
-    r = requests.Session()
+    # Set header by random user agent
     headers = random_header()
-    r.headers = headers
 
-    res = r.get(url, headers=headers)
-    soup = bs4.BeautifulSoup(res.text, "html.parser")
+
+    res = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    webpage = urlopen(res).read()
+
+    soup = bs4.BeautifulSoup(webpage, 'html5lib')
+    # print(soup)
     
-    links = soup.select(".dbsr a")
+        # Extract relevant information from search results
+    links = soup.find_all('div', attrs={'class':'Gx5Zad fP1Qef xpd EtOod pkphOe'})
     for l in links:
         try:
-            url_w = l.get("href")
+            title = l.find('div', class_='BNeawe vvjwJb AP7Wnd').text
+            url_w = (l.find('a', href= True)['href'])
+            date = l.find('span', class_='r0bn4c rQMQod').text
+
+            # Append extracted data to lists
+            t_titles.append(title)
             t_urls.append(url_w)
-            dt = find_date(url_w)
-            t_dates.append(dt)
-
-            res = requests.get(url_w, headers=headers)
-            parsed_article = bs4.BeautifulSoup(res.text,'lxml')
-            paragraphs = parsed_article.find_all('p')
-
-            article_text = ""
-            for p in paragraphs:
-                article_text += p.text
-
-            t_news.append(article_text)
+            t_dates.append(date)
+            
+            # Debug print statement to check URL extraction
+            print(f"Title: {title}, URL: {url_w}, Date: {date}")
         except Exception as e:
             print(f"Error processing URL: {url_w}. Error: {str(e)}")
 
-    # Parsing publishers
-    sources = soup.select(".XTjFC span")
-    for s in sources:
-        t_publisher.append(s.get_text().lower())
+    # Create DataFrame from collected data
+    df = pd.DataFrame({
+        'title': t_titles,
+        'url': t_urls,
+        'date_posted': t_dates
+    })
 
-    df['links'] = t_urls
-    df['article_text'] = t_news
-    df['publisher'] = t_publisher
-    df['created_at'] = t_dates
+    # Print DataFrame to check the collected data (for debugging)
+    print(df.head())
 
-    # Connect to PostgreSQL database
-    conn = psycopg2.connect(
-        dbname="zeus",       
-        user="postgres",
-        password="inr_db",
-        host="db.inr.intellx.in",
-        port="5432"
-    )
+    try:
+        # Connect to PostgreSQL database using SQLAlchemy
+        engine = create_engine('postgresql://postgres:inr_db@db.inr.intellx.in:5432/zeus')
 
-    # Append data to database table
-    df.to_sql('gnews', conn, if_exists='append', index=False)
+        with engine.connect() as conn:
+            #delete existing data from table
+            conn.execute("DELETE FROM gnews2")
 
-    # Close database connection
-    conn.close()
+            
+            # Append data to database table
+            df.to_sql('gnews2', con=engine, if_exists='append', index=False, dtype={'created_at': sqlalchemy_types.TIMESTAMP})
+            engine.connect().commit()  # Commit the transaction
+            print("Data inserted successfully.")
+    except sqlalchemy.exc.OperationalError as op_err:
+        print(f"Operational error occurred: {op_err}")
+    except sqlalchemy.exc.IntegrityError as int_err:
+        print(f"Integrity error occurred: {int_err}")
+    except Exception as e:
+        print(f"Error inserting data into the database: {str(e)}")
+    finally:
+        # Dispose the engine
+        engine.dispose()
 
 def list_header():
     headers_list = [
@@ -104,49 +123,4 @@ def list_dict():
         ordered_headers_list.append(h)
     return ordered_headers_list
 
-def list_test():
-    headers_list = list_dict()
-    max = len(headers_list)
-    url = 'https://httpbin.org/headers'
-    for i in range(0,max):
-        #Pick a random browser headers
-        headers = random.choice(headers_list)
-        #Create a request session
-        r = requests.Session()
-        r.headers = headers
-        
-        response = r.get(url)
-        print("Request #%d\nUser-Agent Sent:%s\n\nHeaders Recevied by HTTPBin:"%(i,headers['User-Agent']))
-        print(response.json())
-        print("-------------------")
-
-def random_header():
-    headers_list = list_dict()
-    headers = random.choice(headers_list)
-    return headers
-
-
-    
-def find_date(url):
-    headers = random_header()
-    res = requests.get(url)
-    soup = bs4.BeautifulSoup(res.text, "html.parser")
-    
-    # Check if the date is available in the search result snippet
-    date_element = soup.find("span", class_="hvbAAd")
-    if date_element:
-        return date_element.text.strip()
-
-    # If date is not available in the snippet, try to find it within the news article
-    article_links = soup.select(".dbsr a")
-    for link in article_links:
-        article_url = link.get("href")
-        article_res = requests.get(article_url)
-        article_soup = bs4.BeautifulSoup(article_res.text, "html.parser")
-        date_element = article_soup.find("time")  # Assuming date is in a <time> element
-        if date_element:
-            return date_element.text.strip()
-
-    # If date cannot be found, return None
-    return None
 ingest_google_news()
