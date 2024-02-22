@@ -1,11 +1,13 @@
 from flask import *
-
+from Aadhar_OCR import Aadhar_OCR
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import ssl, smtplib, hashlib, uuid
-
+from werkzeug.utils import secure_filename
+import os
 import psycopg2
-
+import sys
+sys.path.append(f"{os.path.dirname(os.getcwd())}/elements/src")
 import pandas as pd
 
 import datetime, json
@@ -17,12 +19,14 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 DATABASE_URL = "postgresql://postgres:inr_db@db.inr.intellx.in/zeus"
 CONNECTION = psycopg2.connect(DATABASE_URL)
 
+@app.route('/')
+def main():
+    return redirect(url_for("dashboard"))
 
 @app.route('/dashboard')
 def dashboard():
     return render_template("dashboard.html")
-
-
+    
 @app.route('/dashboard/matrix', methods=['GET', 'POST'])
 def dashboard_matrix():
 
@@ -157,10 +161,49 @@ def dashboard_facedb():
 
     return render_template("faces.html", data=data)
 
+app.config['UPLOAD_FOLDER'] = 'uploads/'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit upload size to 16MB
+
+# Ensure the upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 @app.route('/validate/id', methods=['GET', 'POST'])
 def validate_id():
-    
-    return render_template("validate_id.html")
+    if request.method == 'POST':
+        file = request.files.get('id_card')
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            aadhar_ocr = Aadhar_OCR(file_path)
+            details = aadhar_ocr.extract_data()
+            if details:
+                return render_template('validate_id.html', details=details, valid=True)
+            else:
+                return render_template('validate_id.html', valid=False)
+        else:
+            return redirect(request.url)
+    return render_template('validate_id.html')
 
+from cam import verify_image_with_model
+
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Flask route for image validation
+@app.route('/validate/photo', methods=['GET', 'POST'])
+def validate_photo():
+    if request.method == 'POST':
+        file = request.files.get('image_file')
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            # Proceed to verify the image using your model
+            verification_result = verify_image_with_model(file_path)
+            # Render the verification result template with the result
+            return render_template('upload_image_for_verification.html', verification_result=verification_result)
+        else:
+            return redirect(request.url)
+    return render_template('upload_image_for_verification.html')
 if __name__ == '__main__':    
     app.run(debug=True)

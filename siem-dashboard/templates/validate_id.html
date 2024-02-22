@@ -3,6 +3,39 @@
 {% block head %}
   {{ super() }}
   <link rel="stylesheet" href="{{url_for('static', filename='datatables/jquery.dataTables.min.css')}}"/>
+  <style>
+    .upload-btn {
+      border: 3px solid cyan;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .wedged-box {
+      border: 1px solid #ddd;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+
+    .validation-message {
+      font-size: 20px;
+      margin-top: 20px;
+    }
+
+    .valid {
+      color: green;
+    }
+
+    .invalid {
+      color: red;
+    }
+  </style>
 {% endblock %}
 {% block content %}
 
@@ -11,28 +44,29 @@
 <br/><br/>
 
   <div class="main">
-
-    <form style="color:white;text-align: center;margin: 0 auto;">
-        <span style="display: flex;align-items: center;align-content: center;text-align: center; padding-left: 30%;">
-          <span>Source Image:</span>&nbsp;&nbsp; <input type="file" name="id_card"/>
-        </span>
-        <button>Verify ID</button>
-      </form>
-
+    <form action="{{ url_for('validate_id') }}" method="post" enctype="multipart/form-data" style="text-align: center;margin: 0 auto;">
+        <input type="file" name="id_card">
+        <input type="submit" value="Upload" class="upload-btn">
+    </form>
       <br/><br>
-      <pre style="color:white;text-align: center;margin: 0 auto;">
-ID is <span style="color:rgba(0,255,0,1);">VALID</span>!
-Face Image in ID is <span style="color:rgba(0,255,0,1);">VALID</span>!
-
-Name: Aaditya Rengarajan
-Aadhar Number: 9524 2963 4591
-Gender: Male
-Date of Birth: 25/02/2003</pre>
+      <div class="wedged-box">
+        <pre style="text-align: center;margin: 0 auto;">
+          <h3>Upload Aadhar Card for Validation</h3>
+          {% if valid is not none %}
+            {% if valid %}
+              <div class="validation-message valid">Card Valid</div>
+              <h4>Extracted Details:</h4>
+              <p>Aadhar No: {{ details[0] }}</p>
+              <p>Gender: {{ details[1] }}</p>
+              <p>DOB: {{ details[2] }}</p>
+              <p>Name: {{ details[3] }}</p>
+            {% else %}
+              <div class="validation-message invalid">Card Invalid</div>
+            {% endif %}
+          {% endif %}
+        </pre>
+      </div>
 
   </div>
-
-
-
-
 
 {% endblock %}

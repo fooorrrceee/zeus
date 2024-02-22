@@ -23,16 +23,17 @@ header {
   display: block;
 }
 .right {
-  margin-top: -7px!important;
+  margin-top: 0px!important;
   margin-bottom: -10px!important;
   color: white;
   text-align: right;
   margin-left: auto;
-  margin-right: 0;
-  max-width: 50%!important;
+  margin-right: 10px!important;
+  max-width: 75%!important;
+  line-height: 1;
 }
 .left {
-  max-width: 49%!important;
+  max-width: 25%!important;
 }
 
 main {
@@ -206,4 +207,12 @@ option {
 
 #globeHere {
   pointer-events: auto;
+}
+
+pre {
+  color: white;
+}
+
+form, .colorChanger {
+  color:white;
 }
